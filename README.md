@@ -1,4 +1,4 @@
-# Webmin Module for NTPsec Client
+# Webmin Module for NTPsec
 
 This Webmin module provides a complete, responsive dashboard and configuration suite for managing and monitoring the `ntpsec` time synchronization daemon on TurnKey Linux (Debian-based distributions).
 
@@ -68,7 +68,7 @@ Use this method if you prefer transferring the package to the server's filesyste
 5. Input the local path on the server: `/tmp/ntpsec.wbm.gz`.
 6. Click the **Install Module** button.
 
-Once installed, the module will be accessible under **System** -> **NTPsec Client**.
+Once installed, the module will be accessible under **System** -> **NTPsec**.
 
 ---
 

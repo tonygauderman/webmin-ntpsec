@@ -1,7 +1,7 @@
-desc=NTPsec Client
+desc=NTPsec
 category=system
 depends=init
 version=1.0
 os_support=*-linux
-longdesc=Configure, monitor, and manage the NTPsec (Network Time Protocol secure) daemon and client synchronization.
+longdesc=Configure, monitor, and manage the NTPsec (Network Time Protocol secure) daemon.
 syslog=1
