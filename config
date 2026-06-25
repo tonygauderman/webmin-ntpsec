@@ -1,0 +1,4 @@
+ntp_conf=/etc/ntpsec/ntp.conf
+ntp_service=ntpsec
+ntpq_path=/usr/bin/ntpq
+ntpdig_path=/usr/bin/ntpdig

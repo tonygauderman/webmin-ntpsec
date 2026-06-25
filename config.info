@@ -1,0 +1,4 @@
+ntp_conf=Path to NTPsec configuration file,8
+ntp_service=Systemd service name,0
+ntpq_path=Path to ntpq binary,8
+ntpdig_path=Path to ntpdig binary,8
