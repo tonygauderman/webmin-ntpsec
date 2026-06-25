@@ -37,12 +37,13 @@ In the **Current NTP Peers** table, the first column displays colored status bad
 
 ## Installation & Deployment
 
-### 1. Build the Package
-On your development machine, run the build script to pack the module files into a Webmin-compatible `.wbm.gz` archive:
-```bash
-python3 build.py
-```
-This generates `ntpsec.wbm.gz` in the root directory.
+### 1. Download or Build the Package
+* **Download (Recommended):** Download the latest pre-compiled `ntpsec.wbm.gz` package directly from the [GitHub Releases](https://github.com/tonygauderman/webmin-ntpsec/releases) page.
+* **Build from source:** Alternatively, run the build script on your development machine to pack the module files into a Webmin-compatible `.wbm.gz` archive:
+  ```bash
+  python3 build.py
+  ```
+  This generates `ntpsec.wbm.gz` in the root directory.
 
 ### 2. Install the Module
 Choose one of the two methods below to install the module on your TurnKey Linux server.
