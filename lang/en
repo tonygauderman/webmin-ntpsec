@@ -1,4 +1,4 @@
-index_title=NTPsec Client
+index_title=NTPsec
 index_status=NTPsec Daemon Status
 index_running=NTPsec daemon is running on your system.
 index_stopped=NTPsec daemon is stopped on your system.
@@ -102,7 +102,7 @@ sync_title=Manual Time Synchronization
 sync_doing=Stopping NTPsec daemon and executing synchronization command...
 sync_success=Time successfully synchronized! Output:
 sync_failed=Time synchronization failed! System command output:
-sync_back=Return to NTPsec Client
+sync_back=Return to NTPsec
 
 action_start=Starting NTPsec service...
 action_stop=Stopping NTPsec service...
