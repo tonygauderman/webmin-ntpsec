@@ -50,6 +50,7 @@ servers_err=Failed to save time source
 servers_eaddress=Missing or invalid address / hostname
 servers_eminpoll=Minimum poll interval must be an integer (e.g. 4 for 16s, 6 for 64s)
 servers_emaxpoll=Maximum poll interval must be an integer greater than or equal to minimum poll
+servers_entspool=Network Time Security (NTS) is not supported for pool time sources. Please change the type to Server or Peer.
 servers_delete=Delete Selected
 
 restrict_title=Access Control Rules

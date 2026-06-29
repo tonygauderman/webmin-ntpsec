@@ -49,7 +49,7 @@ if (defined($idx)) {
     # Network Time Security (NTS)
     my $nts = $item ? $item->{'options'}->{'nts'} : 0;
     print &ui_table_row($text{'servers_nts'},
-        &ui_yesno_radio("nts", $nts)
+        "<div id='nts-field-container'>" . &ui_yesno_radio("nts", $nts) . "</div>"
     );
     
     # iburst
@@ -83,6 +83,41 @@ if (defined($idx)) {
     );
     
     print &ui_table_end();
+    
+    print <<'JS';
+<script type="text/javascript">
+function checkNtsSupport() {
+    var typeSel = document.getElementsByName('type')[0];
+    var ntsField = document.getElementById('nts-field-container');
+    if (typeSel && ntsField) {
+        var tr = ntsField.closest('tr');
+        var yesRadio = ntsField.querySelector('input[value="1"]');
+        var noRadio = ntsField.querySelector('input[value="0"]');
+        if (typeSel.value === 'pool') {
+            if (yesRadio) yesRadio.disabled = true;
+            if (noRadio) noRadio.checked = true;
+            if (tr) {
+                tr.style.opacity = '0.5';
+                tr.style.pointerEvents = 'none';
+            }
+        } else {
+            if (yesRadio) yesRadio.disabled = false;
+            if (tr) {
+                tr.style.opacity = '';
+                tr.style.pointerEvents = '';
+            }
+        }
+    }
+}
+document.addEventListener('DOMContentLoaded', checkNtsSupport);
+// Run immediately for SPA/AJAX compatibility
+var typeSel = document.getElementsByName('type')[0];
+if (typeSel) {
+    typeSel.addEventListener('change', checkNtsSupport);
+    checkNtsSupport();
+}
+</script>
+JS
     print &ui_form_end([ [ undef, $text{'save'} ] ]);
     
     &ui_print_footer("edit_servers.cgi", $text{'servers_title'});

@@ -134,7 +134,7 @@ sub save_ntp_config {
             }
         } elsif ($item->{'type'} eq 'server' || $item->{'type'} eq 'pool' || $item->{'type'} eq 'peer') {
             $line_str = "$item->{'type'} $item->{'address'}";
-            if ($item->{'options'}->{'nts'}) { $line_str .= " nts"; }
+            if ($item->{'options'}->{'nts'} && $item->{'type'} ne 'pool') { $line_str .= " nts"; }
             if ($item->{'options'}->{'iburst'}) { $line_str .= " iburst"; }
             if ($item->{'options'}->{'prefer'}) { $line_str .= " prefer"; }
             if (defined($item->{'options'}->{'minpoll'}) && $item->{'options'}->{'minpoll'} ne '') {
