@@ -48,8 +48,13 @@ my $item = {
     'options' => {}
 };
 
+# Validation for NTS and pools
+if ($in{'nts'} eq '1' && $type eq 'pool') {
+    &error($text{'servers_entspool'});
+}
+
 # Options
-$item->{'options'}->{'nts'} = 1 if ($in{'nts'} && $type ne 'pool'); # pools do not support NTS
+$item->{'options'}->{'nts'} = 1 if ($in{'nts'} eq '1');
 $item->{'options'}->{'iburst'} = 1 if ($in{'iburst'});
 $item->{'options'}->{'prefer'} = 1 if ($in{'prefer'});
 $item->{'options'}->{'minpoll'} = $minpoll if ($minpoll ne '');

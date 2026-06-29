@@ -218,6 +218,55 @@ foreach my $item (@$re_conf) {
 die "Failed to find newly added server in re-parsed configuration" if (!$found_new);
 print "Serializer test passed successfully!\n\n";
 
+# Edit the newly added server to enable NTS
+print "--- Testing Editing Server (NTS Enable) ---\n";
+my $conf_for_edit = &get_ntp_config($test_conf);
+my $idx_to_edit = -1;
+for (my $i = 0; $i < @$conf_for_edit; $i++) {
+    if ($conf_for_edit->[$i]->{'type'} eq 'server' && $conf_for_edit->[$i]->{'address'} eq 'ntp.ubuntu.com') {
+        $idx_to_edit = $i;
+        last;
+    }
+}
+die "Failed to find server to edit" if ($idx_to_edit == -1);
+
+# Replicate save_server.cgi editing logic
+$conf_for_edit->[$idx_to_edit]->{'options'} = { 'nts' => 1, 'iburst' => 1 };
+my $edit_save_ok = &save_ntp_config($conf_for_edit);
+die "Failed to save edited configuration" if (!$edit_save_ok);
+
+# Re-read and check NTS flag
+my $re_conf2 = &get_ntp_config($test_conf);
+my $edited_server = $re_conf2->[$idx_to_edit];
+die "Edited server address changed unexpectedly" if ($edited_server->{'address'} ne 'ntp.ubuntu.com');
+die "NTS option not saved on edit" if (!$edited_server->{'options'}->{'nts'});
+print "Server edit (NTS enable) test passed successfully!\n\n";
+
+# Verify NTS is NOT serialized for pools
+print "--- Testing Pool (NTS Disallow) ---\n";
+my $conf_pool_edit = &get_ntp_config($test_conf);
+my $pool_idx = -1;
+for (my $i = 0; $i < @$conf_pool_edit; $i++) {
+    if ($conf_pool_edit->[$i]->{'type'} eq 'pool') {
+        $pool_idx = $i;
+        last;
+    }
+}
+die "Failed to find pool to test" if ($pool_idx == -1);
+
+# Try to set NTS to 1 on pool
+$conf_pool_edit->[$pool_idx]->{'options'}->{'nts'} = 1;
+my $pool_save_ok = &save_ntp_config($conf_pool_edit);
+die "Failed to save pool config" if (!$pool_save_ok);
+
+# Re-read and assert that pool line does NOT contain nts option
+my $re_conf3 = &get_ntp_config($test_conf);
+my $edited_pool = $re_conf3->[$pool_idx];
+die "NTS option incorrectly written for pool directive" if ($edited_pool->{'options'}->{'nts'});
+print "Pool NTS disallowance test passed successfully!\n\n";
+
+
+
 # Test peers parsing
 print "--- Testing Peers Parser ---\n";
 my $peers = &get_ntpq_peers();
