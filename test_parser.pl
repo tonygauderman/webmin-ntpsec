@@ -66,6 +66,40 @@ NTS server recvs good:                  0
 NTS server recvs w error:               0
 NTS fill cookies:                       0
 NTS
+    } elsif ($cmd =~ /ntpq -c sysstats/) {
+        return <<'SYSSTATS';
+uptime:                 86400
+sysstats reset:         86400
+packets received:       1500
+current version:        1400
+old version:            100
+bad length or format:   5
+authentication failed:  2
+declined:               0
+restricted:             10
+rate limited:           1
+KoD responses:          2
+processed for time:     1200
+SYSSTATS
+    } elsif ($cmd =~ /ntpq -c mrulist/) {
+        return <<'MRULIST';
+Ctrl-C will stop MRU retrieval and display partial results.
+ lstint avgint rstr r m v  count    score   drop rport remote address
+=====================================================================
+      2     10  3d0 . 6 2       15    0.050      0 54123 192.168.1.50
+     45    120  3d0 . 4 4       50    0.050      0   123 203.0.113.12 (some.dns.resolv)
+# Collected 2 slots
+MRULIST
+    } elsif ($cmd =~ /ntpq -c monstats/) {
+        return <<'MONSTATS';
+enabled:                           3
+hash slots in use:                11
+addresses in use:                 11
+peak addresses:                   11
+maximum addresses:             10922
+kilobytes:                         1
+maximum kilobytes:              1024
+MONSTATS
     }
 }
 sub backquote_logged { }
@@ -209,6 +243,40 @@ die "NTS info parsing failed" if (!defined($nts));
 die "NTS client sends mismatch" if ($nts->{'NTS client sends'} != 10);
 die "NTS client recvs good mismatch" if ($nts->{'NTS client recvs good'} != 8);
 print "NTS Info parsing test passed successfully!\n\n";
+
+# Test SysStats parsing
+print "--- Testing SysStats Parser ---\n";
+my $sys = &get_sys_stats();
+die "SysStats parsing failed" if (!defined($sys));
+die "SysStats uptime mismatch" if ($sys->{'uptime'} != 86400);
+die "SysStats packets received mismatch" if ($sys->{'packets received'} != 1500);
+die "SysStats restricted mismatch" if ($sys->{'restricted'} != 10);
+print "SysStats parsing test passed successfully!\n\n";
+
+# Test MRU parsing
+print "--- Testing MRU Parser ---\n";
+my $mru = &get_ntp_mru();
+die "MRU parsing failed" if (!defined($mru));
+die "MRU count mismatch" if (scalar(@$mru) != 1);
+die "MRU client 1 addr mismatch" if ($mru->[0]->{'addr'} ne '192.168.1.50');
+die "MRU client 1 count mismatch" if ($mru->[0]->{'count'} != 15);
+die "MRU client 1 rport mismatch" if ($mru->[0]->{'rport'} != 54123);
+print "MRU parsing test passed successfully!\n\n";
+
+# Test MonStats parsing
+print "--- Testing MonStats Parser ---\n";
+my $mon = &get_ntp_monstats();
+die "MonStats parsing failed" if (!defined($mon));
+die "MonStats addresses in use mismatch" if ($mon->{'addresses in use'} != 11);
+die "MonStats maximum addresses mismatch" if ($mon->{'maximum addresses'} != 10922);
+die "MonStats peak addresses mismatch" if ($mon->{'peak addresses'} != 11);
+print "MonStats parsing test passed successfully!\n\n";
+
+# Test MRU Upstreams count
+print "--- Testing MRU Upstreams Parser ---\n";
+my $up_count = &get_ntp_mru_upstreams();
+die "MRU Upstreams count mismatch" if ($up_count != 1); # In mock mrulist, only 1 (203.0.113.12) is port 123 and not loopback
+print "MRU Upstreams parsing test passed successfully!\n\n";
 
 # Clean up
 unlink($test_conf);

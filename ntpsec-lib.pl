@@ -294,6 +294,156 @@ sub get_nts_info {
     return keys(%info) ? \%info : undef;
 }
 
+# get_sys_stats()
+# Runs ntpq -c sysstats and parses general system/query statistics.
+sub get_sys_stats {
+    my $ntpq = $config{'ntpq_path'} || '/usr/bin/ntpq';
+    if (!-x $ntpq) {
+        return undef;
+    }
+    my $out = &backquote_command(quotemeta($ntpq) . " -c sysstats 2>&1");
+    if ($? != 0 || $out =~ /^\*\*\*/ || $out =~ /invalid/i) {
+        return undef;
+    }
+    my %info;
+    my @lines = split(/\r?\n/, $out);
+    foreach my $line (@lines) {
+        if ($line =~ /^([^:]+):\s*(.*)$/) {
+            my $k = lc($1);
+            my $v = $2;
+            $k =~ s/^\s+//; $k =~ s/\s+$//;
+            $v =~ s/^\s+//; $v =~ s/\s+$//;
+            $info{$k} = $v;
+        }
+    }
+    return keys(%info) ? \%info : undef;
+}
+
+# get_ntp_monstats()
+# Runs ntpq -c monstats and parses monitor database stats (client tracking stats).
+sub get_ntp_monstats {
+    my $ntpq = $config{'ntpq_path'} || '/usr/bin/ntpq';
+    if (!-x $ntpq) {
+        return undef;
+    }
+    my $out = &backquote_command(quotemeta($ntpq) . " -c monstats 2>&1");
+    if ($? != 0 || $out =~ /^\*\*\*/ || $out =~ /invalid/i) {
+        return undef;
+    }
+    my %info;
+    my @lines = split(/\r?\n/, $out);
+    foreach my $line (@lines) {
+        if ($line =~ /^([^:]+):\s*(.*)$/) {
+            my $k = lc($1);
+            my $v = $2;
+            $k =~ s/^\s+//; $k =~ s/\s+$//;
+            $v =~ s/^\s+//; $v =~ s/\s+$//;
+            $info{$k} = $v;
+        }
+    }
+    return keys(%info) ? \%info : undef;
+}
+
+
+# get_ntp_mru()
+# Runs ntpq -c mrulist and parses recently connected clients.
+sub get_ntp_mru {
+    my $ntpq = $config{'ntpq_path'} || '/usr/bin/ntpq';
+    my @mru;
+    if (!-x $ntpq) {
+        return \@mru;
+    }
+    my $out = &backquote_command(quotemeta($ntpq) . " -c mrulist 2>&1");
+    if ($? != 0 || $out =~ /^\*\*\*/ || $out =~ /invalid/i) {
+        return \@mru;
+    }
+    my @lines = split(/\r?\n/, $out);
+    my @headers;
+    foreach my $line (@lines) {
+        $line =~ s/^\s+//;
+        $line =~ s/\s+$//;
+        # Skip comments, progress alerts, and empty lines
+        next if ($line eq '' || $line =~ /^===/ || $line =~ /ctrl-c/i || $line =~ /collected/i || $line =~ /processed/i || $line =~ /used/i || $line =~ /^#/);
+        
+        if (!@headers) {
+            # Standardize headers (remote address -> addr)
+            $line =~ s/remote\s+address/addr/i;
+            $line =~ s/\baddress\b/addr/i;
+            my @cols = split(/\s+/, $line);
+            @headers = map { lc($_) } @cols;
+            next;
+        }
+        
+        my @cols = split(/\s+/, $line);
+        my %entry;
+        for (my $i=0; $i<@headers; $i++) {
+            if ($headers[$i] eq 'addr') {
+                # Combine all remaining columns for the address
+                $entry{'addr'} = join(" ", @cols[$i..$#cols]);
+                last;
+            } elsif ($i < @cols) {
+                $entry{$headers[$i]} = $cols[$i];
+            }
+        }
+        # Filter out loopback/localhost and upstream servers (rport 123)
+        next if ($entry{'addr'} =~ /localhost/i || $entry{'addr'} eq '127.0.0.1' || $entry{'addr'} eq '::1');
+        next if (defined($entry{'rport'}) && $entry{'rport'} eq '123');
+
+        push(@mru, \%entry) if ($entry{'addr'});
+    }
+    my @sorted = sort { ($a->{'lstint'} || 0) <=> ($b->{'lstint'} || 0) } @mru;
+    my @sliced = splice(@sorted, 0, 500);
+    return \@sliced;
+}
+
+# get_ntp_mru_upstreams()
+# Returns the count of upstream NTP servers in the MRU table (rport == 123)
+sub get_ntp_mru_upstreams {
+    my $ntpq = $config{'ntpq_path'} || '/usr/bin/ntpq';
+    my $count = 0;
+    if (!-x $ntpq) {
+        return 0;
+    }
+    my $out = &backquote_command(quotemeta($ntpq) . " -c mrulist 2>&1");
+    if ($? != 0 || $out =~ /^\*\*\*/ || $out =~ /invalid/i) {
+        return 0;
+    }
+    my @lines = split(/\r?\n/, $out);
+    my @headers;
+    foreach my $line (@lines) {
+        $line =~ s/^\s+//;
+        $line =~ s/\s+$//;
+        next if ($line eq '' || $line =~ /^===/ || $line =~ /ctrl-c/i || $line =~ /collected/i || $line =~ /processed/i || $line =~ /used/i || $line =~ /^#/);
+        
+        if (!@headers) {
+            $line =~ s/remote\s+address/addr/i;
+            $line =~ s/\baddress\b/addr/i;
+            my @cols = split(/\s+/, $line);
+            @headers = map { lc($_) } @cols;
+            next;
+        }
+        
+        my @cols = split(/\s+/, $line);
+        my %entry;
+        for (my $i=0; $i<@headers; $i++) {
+            if ($headers[$i] eq 'addr') {
+                $entry{'addr'} = join(" ", @cols[$i..$#cols]);
+                last;
+            } elsif ($i < @cols) {
+                $entry{$headers[$i]} = $cols[$i];
+            }
+        }
+        if ($entry{'rport'} eq '123' && $entry{'addr'} !~ /localhost/i && $entry{'addr'} ne '127.0.0.1' && $entry{'addr'} ne '::1') {
+            $count++;
+        }
+    }
+    return $count;
+}
+
+
+
+
+
 # get_ntp_status()
 # Checks systemd service status. Returns (running_bool, enabled_bool)
 sub get_ntp_status {
